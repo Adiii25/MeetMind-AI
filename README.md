@@ -1,43 +1,30 @@
-# MeetMind-AI
+# MeetMind AI
 
-MeetMind-AI turns audio recordings into searchable, queryable transcripts.
-Upload a meeting, interview, or podcast — MeetMind-AI transcribes it, identifies
-who spoke when, aligns the two outputs, stores the result in a multi-level
-ChromaDB vector index, and lets you ask natural language questions with
-streaming token-by-token answers.
+**An AI-Powered Meeting Intelligence Platform**
 
-Runs fully offline on CPU. GPU and cloud APIs are also supported.
+MeetMind AI transforms audio recordings of meetings, interviews, and podcasts into searchable, speaker-labelled transcripts. It combines automatic speech recognition, speaker diarization, transcript alignment, vector search, and Retrieval-Augmented Generation (RAG) to make conversations easier to understand and explore.
+
+Upload an audio recording, let the AI process the conversation, and ask natural-language questions to retrieve information from the meeting.
 
 ---
 
 ## Features
 
-- **Transcription** — Local GPU (faster-whisper / Whisper large-v3) or HuggingFace Inference API
-- **Speaker diarization** — Pyannote Audio 3.1 labels every speaker turn with timestamps
-- **Alignment** — Merges Whisper segments and Pyannote intervals into speaker-labelled turns
-- **Multi-level RAG indexing** — ChromaDB index at document, segment, and chunk granularity; memory-safe streaming pipeline with atomic index swap
-- **PageIndex** — Lightweight positional index for page-aware retrieval alongside the vector index
-- **Streaming Q&A chat** — Token-by-token answers via local GGUF (llama.cpp) or HuggingFace Inference API; context references passed from the UI into each prompt
-- **Persistent chat history** — Per-job conversation sessions stored in SQLite; individual messages can be deleted
-- **Transcript editing + incremental reindex** — Edit speaker names or text in the UI; rebuild only changed segments
-- **Speaker rename** — Rename a speaker label across all segments in one operation
-- **Download outputs** — Aligned JSON, raw Whisper transcription, and Pyannote diarization JSON
-- **Authentication** — JWT Bearer tokens for REST endpoints; NiceGUI session for legacy pages
-- **Web UI** — Next.js 16 / React 19 / Tailwind SPA (port 3000)
-- **REST + WebSocket API** — FastAPI backend (port 8080); all core operations are machine-readable
-- **CLI** — Batch transcribe, index, and query from the command line
-
----
-
-## Demo
-
-<!-- <video src="img/meetbot_demo.webm" controls width="100%"></video> -->
-
-![Dashboard](https://raw.githubusercontent.com/SIMETRAL55/MeetMind-AI/refs/heads/main/img/dashboard.png)
-![Processing](https://raw.githubusercontent.com/SIMETRAL55/MeetMind-AI/refs/heads/main/img/2.png)
-![PageIndex](https://raw.githubusercontent.com/SIMETRAL55/MeetMind-AI/refs/heads/main/img/3.png)
-![Chat](https://raw.githubusercontent.com/SIMETRAL55/MeetMind-AI/refs/heads/main/img/4.png)
-
+- **Automatic Transcription** — Converts audio recordings into text using Whisper.
+- **Speaker Diarization** — Identifies different speakers and labels their conversation segments using Pyannote Audio 3.1.
+- **Speaker Alignment** — Combines transcription and speaker timestamps into structured, speaker-labelled conversations.
+- **Multi-Level RAG Indexing** — Stores document, segment, and chunk-level information in ChromaDB.
+- **AI-Powered Q&A** — Ask natural-language questions about recorded conversations.
+- **Streaming Responses** — Generates answers token by token.
+- **Persistent Chat History** — Maintains conversation sessions using SQLite.
+- **Transcript Editing** — Edit speaker names and transcript text.
+- **Incremental Reindexing** — Rebuilds the search index after transcript modifications.
+- **Meeting Knowledge Retrieval** — Retrieves relevant information with speaker and timestamp references.
+- **Downloadable Transcripts** — Export aligned JSON, transcription results, and diarization data.
+- **Authentication** — JWT-based authentication for REST endpoints.
+- **Modern Web Interface** — Next.js, React, and Tailwind CSS frontend.
+- **REST API and WebSockets** — FastAPI backend for processing and real-time communication.
+- **Command-Line Interface** — Supports batch processing, indexing, and querying.
 
 ---
 
@@ -45,632 +32,688 @@ Runs fully offline on CPU. GPU and cloud APIs are also supported.
 
 1. [Project Overview](#1-project-overview)
 2. [System Architecture](#2-system-architecture)
-3. [Repository Structure](#3-repository-structure)
-4. [Installation](#4-installation)
-5. [Environment Variables](#5-environment-variables)
-6. [Running the Application](#6-running-the-application)
-7. [Indexing and Processing Pipeline](#7-indexing-and-processing-pipeline)
-8. [Query System](#8-query-system)
-9. [REST and WebSocket API](#9-rest-and-websocket-api)
-10. [Docker](#10-docker)
-11. [Troubleshooting](#11-troubleshooting)
-12. [Development Notes](#12-development-notes)
-13. [Running Tests](#13-running-tests)
+3. [Technology Stack](#3-technology-stack)
+4. [Repository Structure](#4-repository-structure)
+5. [Installation](#5-installation)
+6. [Environment Variables](#6-environment-variables)
+7. [Running the Application](#7-running-the-application)
+8. [Processing Pipeline](#8-processing-pipeline)
+9. [RAG and Query System](#9-rag-and-query-system)
+10. [API Documentation](#10-api-documentation)
+11. [Docker Deployment](#11-docker-deployment)
+12. [Troubleshooting](#12-troubleshooting)
+13. [Development Roadmap](#13-development-roadmap)
+14. [Running Tests](#14-running-tests)
+15. [Acknowledgements and License](#15-acknowledgements-and-license)
 
 ---
 
 ## 1. Project Overview
 
-MeetMind-AI is a self-hosted meeting-intelligence assistant with the following capabilities:
+MeetMind AI is a self-hosted meeting intelligence system designed to transform unstructured audio conversations into structured and searchable knowledge.
 
-- **Transcription** — OpenAI Whisper (local GPU) or HuggingFace Inference API
-- **Speaker diarization** — Pyannote Audio 3.1 identifies and labels each speaker
-- **Alignment** — Merges Whisper segments and Pyannote intervals into speaker-labelled turns
-- **Multi-level RAG indexing** — ChromaDB index with document, segment, and chunk levels
-- **Streaming Q&A** — Token-by-token answers via local GGUF model or HuggingFace API
-- **Persistent chat history** — Per-job conversation history in SQLite
-- **Transcript editing and reindexing** — Edit speakers/text in the UI; rebuild the index instantly
-- **Download outputs** — Aligned JSON, raw Whisper output, diarization JSON
-- **Web UI** — Modern, responsive Next.js SPA frontend architecture with Tailwind CSS
-- **REST + WebSocket API** — All core operations exposed as machine-readable endpoints from a Python FastAPI backend
-- **CLI** — Batch-processing command-line interface
+### Core Capabilities
+
+**1. Speech Recognition**
+
+Uses OpenAI Whisper to convert spoken conversations into written transcripts.
+
+**2. Speaker Identification**
+
+Uses Pyannote Audio to identify different speakers and determine when each person speaks.
+
+**3. Transcript Alignment**
+
+Combines speech recognition output with speaker diarization timestamps to generate speaker-labelled conversation segments.
+
+**4. Intelligent Knowledge Retrieval**
+
+Uses ChromaDB and sentence embeddings to organize meeting information into multiple searchable levels.
+
+**5. Retrieval-Augmented Generation**
+
+Uses RAG to retrieve relevant meeting information before generating answers through a language model.
+
+**6. Interactive Meeting Assistant**
+
+Allows users to ask questions about processed recordings and receive answers based on the conversation.
+
+**7. Meeting Management**
+
+Provides transcript editing, chat history, downloadable outputs, and meeting-level information management.
 
 ---
 
 ## 2. System Architecture
 
-### Full pipeline (new job)
+### Full Processing Pipeline
 
+```text
+             AUDIO UPLOAD
+                   |
+                   v
+          SPEECH TRANSCRIPTION
+                Whisper
+                   |
+                   v
+          SPEAKER DIARIZATION
+                Pyannote
+                   |
+                   v
+           TRANSCRIPT ALIGNMENT
+                   |
+                   v
+          STRUCTURED TRANSCRIPT
+                   |
+                   v
+             RAG INDEXING
+                ChromaDB
+                   |
+                   v
+          VECTOR EMBEDDINGS
+                   |
+                   v
+          SEARCHABLE KNOWLEDGE
+                   |
+                   v
+            AI QUESTION ANSWERING
+                   |
+                   v
+             FINAL RESPONSE
 ```
-Audio upload
-  └─► Stage 1: Transcription  (Whisper)              0 – 40 %
-        └─► Stage 2: Diarization  (Pyannote)         40 – 65 %
-              └─► Stage 3: Alignment                 65 – 75 %
-                    │  ► Insert / replace segments in SQLite
-                    └─► Stage 4: RAG Indexing         75 – 95 %
-                          │  ► Write JSONL (doc + segment + chunk docs)
-                          │  ► Batch-embed with sentence-transformers
-                          └─► Chroma atomic swap to live collection
+
+### Query Processing Pipeline
+
+```text
+        User Question
+              |
+              v
+       Query Embedding
+              |
+              v
+       Vector Retrieval
+              |
+              v
+        MMR Reranking
+              |
+              v
+       Context Selection
+              |
+              v
+        LLM Generation
+              |
+              v
+       Streaming Response
 ```
 
-### Reindex (after transcript edit)
+### Main Components
 
-```
-User edits text / speaker labels in the UI
-  └─► Bump transcript version in DB
-        └─► Flush DB segments → result JSON
-              └─► Re-embed and rebuild Chroma index (atomic swap)
-```
-
-### Query path
-
-```
-User question
-  └─► Stage 1: ANN recall  (RAG_RECALL_N candidates from Chroma)
-        └─► Stage 2: MMR reranking  (picks RAG_MAX_CONTEXT_CHUNKS)
-              └─► Stage 3: LLM generation  (local llama.cpp or HF API)
-                    └─► Token stream → WebSocket → browser
-```
-
-### Worker architecture
-
-All pipeline work runs in a single dedicated OS thread (`meetbot-pipeline-worker`).
-Only one job runs at a time — this avoids VRAM contention between Whisper, Pyannote,
-and the embedding model. Jobs from the web UI are enqueued through `JobQueue` (a
-`threading.Queue`) and dispatched by `pipeline_worker.py` or `reindex_worker.py`.
+| Component | Responsibility |
+|---|---|
+| Whisper | Speech-to-text conversion |
+| Pyannote | Speaker diarization |
+| Alignment Service | Combines transcript and speaker information |
+| ChromaDB | Vector database |
+| Sentence Transformers | Text embeddings |
+| RAG Pipeline | Context retrieval and answer generation |
+| FastAPI | Backend API |
+| Next.js | Frontend application |
+| SQLite | Persistent application data |
 
 ---
 
-## 3. Repository Structure
+## 3. Technology Stack
 
-```
+### Artificial Intelligence and Machine Learning
+
+- Python
+- OpenAI Whisper
+- Pyannote Audio
+- Sentence Transformers
+- Large Language Models
+- Retrieval-Augmented Generation
+- Natural Language Processing
+
+### Backend
+
+- Python
+- FastAPI
+- WebSockets
+- JWT Authentication
+- SQLite
+
+### Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+
+### Vector Database and Storage
+
+- ChromaDB
+- SQLite
+- JSON / JSONL
+
+### Development and Deployment
+
+- Git
+- GitHub
+- Docker
+- Docker Compose
+- FFmpeg
+- Pytest
+- Jest
+- Playwright
+
+---
+
+## 4. Repository Structure
+
+```text
 MeetMind-AI/
+│
 ├── meetbot/
-│   ├── adapters/              Backend adapters (pluggable)
-│   │   ├── llm/               llama.cpp (local) and HuggingFace LLM clients
-│   │   └── transcribers/      Local Whisper and HF Inference API transcribers
-│   ├── services/              Core business logic
-│   │   ├── transcriber.py     Audio → Whisper segments (with chunk-based large-file support)
-│   │   ├── diarizer.py        Audio → Pyannote speaker intervals (with caching)
-│   │   ├── aligner.py         Merge transcript + diarization → speaker-labelled turns
-│   │   ├── formatters.py      Produce the aligned result JSON written to disk
-│   │   ├── query_service.py   RAG recall → MMR rerank → LLM streaming generation
-│   │   └── rag/               RAG v2 pipeline modules
-│   │       ├── indexer.py     Multi-level Chroma indexer (atomic swap, memory-safe)
-│   │       ├── chunker.py     Speaker-aware overlapping chunker (streaming)
-│   │       ├── retriever.py   ChromaDB ANN retrieval with level filtering
-│   │       ├── reranker.py    MMR cosine reranker
-│   │       ├── selector.py    Context window selection after reranking
-│   │       ├── summarizer.py  Answer-embedding source filtering
-│   ├── workers/               Background job processing
-│   ├── web/                   Legacy NiceGUI app & New FastAPI Backend
-│   │   ├── main.py            App initialisation, CORS config, and route registration
-│   │   ├── api.py             FastAPI REST endpoints for the Next.js frontend
-│   │   ├── ws.py              Job-progress WebSocket (/ws/jobs/{id})
-│   │   └── ws_chat.py         Streaming RAG chat WebSocket (/ws/chat/{id})
-│   ├── db/                    Data layer
-│   ├── utils/                 Utilities
-│   ├── cli.py                 Command-line entry point
-│   └── config.py              Pydantic Settings (all configuration lives here)
-├── frontend/                  New Next.js Web App
-│   ├── src/app/               App Router pages (Dashboard, Job Details, Chat)
-│   ├── src/components/        React Server/Client components (shadcn/ui, Tailwind)
-│   ├── src/lib/               API wrappers and WebSocket hooks
-│   ├── tests/                 Playwright E2E and Jest Unit tests
-│   ├── next.config.ts         Standalone Next.js configuration
-│   └── Dockerfile             Multi-stage frontend Dockerfile
-├── tests/                     Pytest test suite for Python Backend
-├── Dockerfile                 Backend Python engine Dockerfile
-├── docker-compose.yml         Run both Backend and Frontend easily
+│   ├── adapters/
+│   │   ├── llm/
+│   │   └── transcribers/
+│   │
+│   ├── services/
+│   │   ├── transcriber.py
+│   │   ├── diarizer.py
+│   │   ├── aligner.py
+│   │   ├── formatters.py
+│   │   ├── query_service.py
+│   │   │
+│   │   └── rag/
+│   │       ├── indexer.py
+│   │       ├── chunker.py
+│   │       ├── retriever.py
+│   │       ├── reranker.py
+│   │       ├── selector.py
+│   │       └── summarizer.py
+│   │
+│   ├── workers/
+│   ├── web/
+│   ├── db/
+│   ├── utils/
+│   ├── cli.py
+│   └── config.py
+│
+├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   ├── components/
+│   │   └── lib/
+│   │
+│   ├── tests/
+│   └── package.json
+│
+├── tests/
+├── models/
+├── results/
+├── scripts/
+│
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── pyproject.toml
+├── .env.example
+├── .gitignore
+├── LICENSE
+└── README.md
 ```
+
+*Note: This structure describes the inherited project layout. Update it to match the actual directories and files in your repository.*
 
 ---
 
-## 4. Installation
+## 5. Installation
 
 ### Prerequisites
 
-| Requirement | Notes |
+| Requirement | Description |
 |---|---|
-| Python 3.12 | Tested version |
-| `ffmpeg` | Required for audio conversion and silence detection |
-| CUDA 11.8 or 12.1 | Optional; strongly recommended for transcription/diarization |
-| CMake + compiler | Only if installing `llama-cpp-python` from source |
+| Python 3.12 | Backend environment |
+| Node.js | Frontend development |
+| npm | Frontend dependencies |
+| FFmpeg | Audio processing |
+| Git | Version control |
+| Hugging Face Account | Access to gated models |
+| CUDA | Optional GPU acceleration |
 
-Install `ffmpeg`:
+### Install FFmpeg
+
+**Windows**
+
+Install FFmpeg and add its `bin` directory to your system PATH.
+
+**Ubuntu / Debian**
 
 ```bash
-# Ubuntu / Debian
+sudo apt update
 sudo apt install ffmpeg
+```
 
-# macOS
+**macOS**
+
+```bash
 brew install ffmpeg
 ```
 
-### Local development setup
+### Clone the Repository
 
 ```bash
-# 1. Clone and enter project directory
-git clone https://github.com/your-org/meetbot.git
-cd meetbot/MeetMind-AI
+git clone https://github.com/Adiii25/MeetMind-AI.git
 
-# 2. Create and activate virtual environment
-python -m venv ../venv
-source ../venv/bin/activate        # Windows: ..\venv\Scripts\activate
+cd MeetMind-AI
+```
 
-# 3. Install PyTorch — choose the correct variant for your hardware
-#    CPU only:
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-#    CUDA 11.8:
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-#    CUDA 12.1:
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+### Create a Python Virtual Environment
 
-# 4. Install all Python dependencies
+```bash
+python -m venv venv
+```
+
+Activate it on Windows:
+
+```powershell
+venv\Scripts\activate
+```
+
+Activate it on Linux/macOS:
+
+```bash
+source venv/bin/activate
+```
+
+### Install PyTorch
+
+CPU version:
+
+```bash
+pip install torch torchvision torchaudio
+```
+
+For NVIDIA GPU acceleration, install the appropriate PyTorch CUDA build from the official PyTorch installation instructions.
+
+### Install Backend Dependencies
+
+```bash
 pip install -r requirements.txt
-
-# 5. Install MeetMind-AI in editable mode
-pip install -e .
-
-# 6. (Optional) Build llama-cpp-python with CUDA support for the local LLM
-#    CUDA 11.8:
-CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python
-#    CUDA 12.1:
-CMAKE_ARGS="-DLLAMA_CUDA=on -DCMAKE_CUDA_ARCHITECTURES=native" pip install llama-cpp-python
-
-# 7. Configure environment variables
-cp .env.example .env    # or create .env from scratch — see Section 5
 ```
 
-### Model weights
-
-| Model | Size | Auto-downloaded? | Location |
-|---|---|---|---|
-| Whisper large-v3 | ~3 GB | Yes (first use) | `~/.cache/huggingface` |
-| Pyannote 3.1 | ~500 MB | Yes (requires free HF token + accept conditions) | `~/.cache/huggingface` |
-| Sarashina embedding (1B) | ~2 GB | No — download manually | `./models/sarashina-embedding-v1-1b/` |
-| RakutenAI-7B-instruct GGUF | ~5 GB | No — download manually | `./models/rakutenai-7b-instruct-gguf/` |
-
-For the embedding model and local LLM, place the files under `./models/` and
-set `EMBEDDING_MODEL` / `LOCAL_LLM_MODEL_PATH` in `.env`.
-
-### Docker setup
-
-See [Section 10](#10-docker).
-
----
-
-## 5. Environment Variables
-
-All variables are optional unless marked **required**. They can be set in `.env` or
-passed directly as environment variables.
-
-### Authentication
-
-| Variable | Default | Description |
-|---|---|---|
-| `HF_API_TOKEN` | — | **Required** for Pyannote and gated HF models |
-| `HF_HUB_TOKEN` | — | Alias for `HF_API_TOKEN` (deprecated) |
-
-### Models
-
-| Variable | Default | Description |
-|---|---|---|
-| `WHISPER_MODEL` | `openai/whisper-large-v3` | Whisper model name (HF model ID) |
-| `DIARIZATION_MODEL` | `pyannote/speaker-diarization-3.1` | Pyannote model ID |
-| `EMBEDDING_MODEL` | `./models/sarashina-embedding-v1-1b` | Local path or HF model ID for sentence embeddings |
-| `HF_MODEL` | `deepseek-ai/DeepSeek-V3-0324` | HuggingFace model for cloud Q&A |
-| `HF_PROVIDER` | `auto` | HF inference provider (`auto`, `sambanova`, `novita`, `cerebras`, …) |
-| `LOCAL_LLM_MODEL_PATH` | `./models/rakutenai-7b-instruct-gguf` | Path to GGUF model directory |
-| `LOCAL_LLM_GPU_LAYERS` | `15` | Transformer layers offloaded to GPU (0 = CPU only) |
-| `LOCAL_LLM_CONTEXT_SIZE` | `2048` | Context window in tokens |
-| `LOCAL_LLM_MAX_TOKENS` | `128` | Max output tokens per Q&A response |
-| `LOCAL_LLM_TEMPERATURE` | `0.7` | Sampling temperature |
-
-### Backends
-
-| Variable | Default | Description |
-|---|---|---|
-| `TRANSCRIPTION_BACKEND` | `huggingface` | `local` (GPU Whisper process) or `huggingface` (API) |
-| `USE_LOCAL_LLM` | `false` | `true` to use local GGUF model; `false` to use HF Inference API |
-| `DEVICE` | auto | Global compute device: `cuda`, `cpu`, or unset (auto-detect) |
-| `EMBEDDING_DEVICE` | `cuda` | Device for embedding model: `cuda` or `cpu` |
-| `DEFAULT_LANGUAGE` | — | Language hint for Whisper (e.g. `en`, `ja`) |
-
-### RAG and retrieval
-
-| Variable | Default | Description |
-|---|---|---|
-| `VECTOR_DB_PATH` | `./db/sample` | Root directory for Chroma persist directories |
-| `RAG_TOP_K` | `4` | Chunks returned by the REST query endpoint |
-| `RAG_RECALL_N` | `50` | ANN recall pool size (stage-1 candidates before reranking) |
-| `RAG_MAX_CONTEXT_CHUNKS` | `6` | Chunks passed to LLM after MMR reranking |
-| `CHUNK_TOKENS` | `300` | Target chunk size in tokens for transcript chunking |
-| `CHUNK_OVERLAP` | `50` | Overlap tokens between consecutive chunks |
-| `SOURCE_SIM_THRESHOLD` | `0.30` | Minimum cosine similarity for a chunk to appear in sources |
-| `SOURCE_MAX_RETURN` | `5` | Maximum sources shown after answer-embedding filtering |
-
-### Indexing performance
-
-| Variable | Default | Description |
-|---|---|---|
-| `EMBED_BATCH_SIZE` | `16` | Documents per embedding batch |
-| `INDEX_BATCH_PERSIST_CHECKPOINT` | `100` | Log a checkpoint every N batches |
-| `MEMORY_WATCH_ENABLED` | `true` | Enable psutil memory monitoring during indexing |
-| `MEMORY_WATCH_THRESHOLD_PCT` | `0.85` | RAM fraction that triggers batch-size halving |
-| `RAG_MEMORY_SAFE_MODE` | `true` | Streaming JSONL + batched inserts (set `false` only for debugging) |
-
-### I/O paths
-
-| Variable | Default | Description |
-|---|---|---|
-| `OUTPUT_DIR` | `./results` | Directory for pipeline JSON outputs |
-| `TEMP_DIR` | `./temp` | Temporary per-job JSONL during indexing (auto-cleaned on restart) |
-| `CACHE_DIR` | `./.cache_hf` | HuggingFace model cache |
-| `PREPARED_DOCS_DIR` | `./prepared` | Legacy staging directory (not used by the current pipeline) |
-
-### Audio chunking (large files)
-
-| Variable | Default | Description |
-|---|---|---|
-| `AUDIO_CHUNK_ENABLE` | `true` | Split audio files larger than the size threshold |
-| `AUDIO_CHUNK_SIZE_BYTES` | `104857600` | Trigger threshold (100 MB default) |
-| `AUDIO_CHUNK_OVERLAP_SECONDS` | `1.0` | Overlap between consecutive audio chunks |
-| `AUDIO_CHUNK_NOMINAL_DURATION` | `120.0` | Target chunk duration in seconds |
-| `AUDIO_CHUNK_USE_SILENCE_DETECTION` | `true` | Snap chunk boundaries to silence for cleaner cuts |
-
-### Web server
-
-| Variable | Default | Description |
-|---|---|---|
-| `WEB_HOST` | `0.0.0.0` | Bind address |
-| `WEB_PORT` | `8080` | Listening port |
-| `WEB_SECRET_KEY` | (insecure default) | **Change in production** — signs sessions |
-| `WEB_STORAGE_SECRET` | (insecure default) | **Change in production** — encrypts NiceGUI user storage |
-| `MAX_UPLOAD_SIZE_MB` | `500` | Maximum audio file upload size |
-| `ALLOWED_AUDIO_EXTENSIONS` | `.wav,.mp3,.m4a,.flac,.aac,.ogg,.wma,.opus` | Accepted MIME types |
-
----
-
-## 6. Running the Application
-
-### Start the Backend Server
+Install the project in editable mode:
 
 ```bash
-source ../venv/bin/activate
-python -m meetbot.cli serve
+pip install -e .
 ```
-The API and WebSockets will be available at `http://localhost:8080`.
 
-### Start the Next.js Frontend
+### Install Frontend Dependencies
 
 ```bash
 cd frontend
+
 npm install
+```
+
+---
+
+## 6. Environment Variables
+
+Create a `.env` file in the project root.
+
+```env
+# Hugging Face Authentication
+HF_API_TOKEN=your_huggingface_token
+
+# Transcription Configuration
+TRANSCRIPTION_BACKEND=huggingface
+WHISPER_MODEL=openai/whisper-large-v3
+
+# Speaker Diarization
+DIARIZATION_MODEL=pyannote/speaker-diarization-3.1
+
+# Embedding Configuration
+EMBEDDING_MODEL=./models/sarashina-embedding-v1-1b
+
+# LLM Configuration
+USE_LOCAL_LLM=false
+HF_MODEL=deepseek-ai/DeepSeek-V3-0324
+HF_PROVIDER=auto
+
+# Vector Database
+VECTOR_DB_PATH=./db/sample
+
+# RAG Configuration
+RAG_TOP_K=4
+RAG_RECALL_N=50
+RAG_MAX_CONTEXT_CHUNKS=6
+
+# Application Configuration
+WEB_HOST=0.0.0.0
+WEB_PORT=8080
+```
+
+Never commit your actual `.env` file or API credentials to GitHub.
+
+The above values reflect the inherited configuration. Consult the actual project configuration for supported variables and defaults.
+
+---
+
+## 7. Running the Application
+
+### Start Backend
+
+From the project root:
+
+```bash
+python -m meetbot.cli serve
+```
+
+Backend:
+
+```text
+http://localhost:8080
+```
+
+### Start Frontend
+
+Open another terminal:
+
+```bash
+cd frontend
+
+npm install
+
 npm run dev
 ```
 
-Open `http://localhost:3000` to view the new React-based web interface.
+Frontend:
 
-Open `http://localhost:8080`. Create an account on first run.
-
-### CLI — transcribe a single file
-
-```bash
-# Transcribe + diarize + index using HF backend
-python -m meetbot.cli run path/to/meeting.mp3
-
-# Use local Whisper GPU + local GGUF model
-python -m meetbot.cli run path/to/meeting.mp3 \
-    --transcription-backend local \
-    --use-local-llm
-
-# Force overwrite of an existing index
-python -m meetbot.cli run path/to/meeting.mp3 --overwrite-index
+```text
+http://localhost:3000
 ```
 
-### CLI — query an indexed transcript
+### Using the CLI
+
+Process a meeting recording:
+
+```bash
+python -m meetbot.cli run path/to/meeting.mp3
+```
+
+Query an indexed meeting:
 
 ```bash
 python -m meetbot.cli query db/abcd1234 "What were the main action items?"
 ```
 
-### Reindex after transcript edits
+For available options:
 
-1. Open the job detail page for any completed job.
-2. Edit speaker names or transcript text inline.
-3. Click **Reindex** (orange button in the header).
-4. A progress bar tracks the rebuild; existing queries continue against the old index until the swap completes.
-
----
-
-## 7. Indexing and Processing Pipeline
-
-### Stage 1 — Transcription
-
-`TranscriberService` supports two backends selected by `TRANSCRIPTION_BACKEND`:
-
-- `local` — Runs Whisper directly in-process on GPU/CPU. Output is cached under
-  `CACHE_DIR` so restarts skip the expensive step.
-- `huggingface` — Calls the HuggingFace Inference API. Cheaper to run on a CPU-only
-  host; requires `HF_API_TOKEN`.
-
-Large audio files (WAV > `AUDIO_CHUNK_SIZE_BYTES`) are automatically split into
-~2-minute chunks with silence-detection boundary snapping, processed in sequence,
-and merged back before alignment.
-
-### Stage 2 — Diarization
-
-`DiarizationService` uses `pyannote/speaker-diarization-3.1` to produce a timeline
-of (speaker, start, end) intervals. The model is downloaded from HuggingFace on
-first use and cached locally. A valid `HF_API_TOKEN` that has accepted the Pyannote
-model conditions is required.
-
-### Stage 3 — Alignment
-
-`AlignerService.build_speaker_transcript()` overlaps Whisper word-level segments
-with Pyannote intervals to produce the final list of speaker-labelled turns, each
-with `{ start, end, speaker, text }`.
-
-**Idempotency:** `create_segments_from_aligned()` deletes any existing segments for
-the job before inserting new ones. A cancelled-and-restarted pipeline always produces
-exactly the correct segment count — never duplicates.
-
-### Stage 4 — RAG Indexing
-
-`RAGIndexer.build_multilevel_index_atomic()` writes three categories of document
-into a single Chroma collection (distinguished by `level` metadata):
-
-| Level | Count | Best for |
-|---|---|---|
-| `document` | 1 (full concatenated transcript) | Broad summarisation queries |
-| `segment` | N (one per speaker turn) | Speaker-specific or timestamped queries |
-| `chunk` | M (overlapping ~300-token chunks) | Localised factual retrieval |
-
-The user selects the retrieval level from the UI (Chunk / Segment / Document radio
-buttons); the backend uses the chosen level directly without automatic intent
-classification.
-
-**Memory-safe streaming design:**
-All documents are written to a temporary JSONL file first, then streamed through
-the embedder in batches of `EMBED_BATCH_SIZE`. No full document list is ever held
-in memory. After embedding, the index is built in a `.tmp` directory and atomically
-renamed to the live path — queries remain consistent throughout.
-
-**Atomic swap:**
-`{job_id[:8]}/` → `{job_id[:8]}.old/` → (temp becomes live) → old deleted.
-If the swap fails mid-way, the old live index is automatically restored.
-
----
-
-## 8. Query System
-
-### Retrieval flow
-
-```
-question
-  │
-  ├─ ANN recall: Chroma WHERE level = {chosen level}, limit = RAG_RECALL_N
-  │
-  ├─ MMR reranking: Reranker.mmr_select() picks RAG_MAX_CONTEXT_CHUNKS
-  │    (balances relevance to query with diversity among selected candidates)
-  │
-  ├─ Context assembly: Selector formats chunks with speaker + timestamp headers
-  │
-  └─ LLM generation: streaming token-by-token via llama.cpp or HF Inference API
-       └─ Source filtering: answer embedding cosine-compared with chunk embeddings;
-            chunks above SOURCE_SIM_THRESHOLD (max SOURCE_MAX_RETURN) are shown
+```bash
+python -m meetbot.cli --help
 ```
 
-### Retrieval level selection
+---
 
-The query page shows a **Retrieval** panel with three options:
+## 8. Processing Pipeline
 
-- **Chunk** (default) — overlapping ~300-token windows; best for factual questions
-- **Segment** — speaker turns; best for "what did Speaker X say about Y"
-- **Document** — the whole transcript as one vector; best for high-level summaries
+### Stage 1: Audio Transcription
 
-Segment mode additionally exposes a **Segment count** input that controls how many
-speaker turns are retrieved.
+Whisper converts audio into text segments.
 
-### LLM backends
+The system supports local and Hugging Face inference configurations.
 
-| Mode | Setting | Description |
-|---|---|---|
-| Local | `USE_LOCAL_LLM=true` | llama.cpp with a GGUF model (e.g. RakutenAI-7B) |
-| HuggingFace | `USE_LOCAL_LLM=false` | HF Inference API via `HF_MODEL` + `HF_PROVIDER` |
+### Stage 2: Speaker Diarization
 
-Both modes stream tokens to the WebSocket as `{"type":"token","text":"..."}` events.
-A `{"type":"done","retrieval_level":"..."}` event is sent when generation completes.
+Pyannote Audio identifies different speakers and produces timestamped speaker intervals.
+
+Example:
+
+```text
+00:00 - 00:10 | Speaker 1
+00:10 - 00:18 | Speaker 2
+00:18 - 00:25 | Speaker 1
+```
+
+### Stage 3: Transcript Alignment
+
+The alignment service combines transcription and diarization outputs.
+
+Example:
+
+```json
+[
+  {
+    "start": 0.0,
+    "end": 10.0,
+    "speaker": "Speaker 1",
+    "text": "Welcome everyone to the meeting."
+  },
+  {
+    "start": 10.0,
+    "end": 18.0,
+    "speaker": "Speaker 2",
+    "text": "Let's discuss the project."
+  }
+]
+```
+
+### Stage 4: RAG Indexing
+
+The transcript is converted into searchable vector representations.
+
+The indexing system organizes information into:
+
+- Document-level information
+- Speaker-level segments
+- Smaller overlapping text chunks
+
+This enables retrieval at different levels of detail.
 
 ---
 
-## 9. REST and WebSocket API
+## 9. RAG and Query System
 
-### REST endpoints
+MeetMind AI uses Retrieval-Augmented Generation to answer questions using information from processed meeting recordings.
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/jobs/{id}/status` | Job status, progress percentage, paths |
-| `POST` | `/api/jobs/{id}/query` | RAG query; body `{"q":"...","llm_mode":"local\|hf"}` |
-| `GET` | `/api/jobs/{id}/download?type=aligned\|transcription\|diarization` | Download output JSON |
-| `POST` | `/api/jobs/{id}/reindex` | Trigger index rebuild from current DB transcript |
-| `POST` | `/api/jobs/{id}/cancel` | Cancel an in-progress job |
-| `POST` | `/api/jobs/{id}/restart` | Restart a cancelled or failed job (clears stale segments + temp files) |
+### How RAG Works
 
-### WebSocket endpoints
+1. The user enters a question.
+2. The question is converted into an embedding.
+3. Relevant transcript information is retrieved from ChromaDB.
+4. Relevant results are reranked.
+5. The selected information is passed to an LLM.
+6. The LLM generates an answer using the retrieved context.
 
-| Path | Protocol | Description |
-|---|---|---|
-| `/ws/jobs/{id}` | JSON events | Real-time pipeline progress (`stage`, `progress`, `message`) |
-| `/ws/chat/{id}` | JSON events | Streaming RAG chat; send `{"question":"...","llm_mode":"local\|hf","retrieval_level":"chunk\|segment\|document","segment_count":5}` |
+### Example
+
+**User Question:**
+
+"What were the main decisions taken during the meeting?"
+
+**AI Assistant:**
+
+The retrieved meeting context is used to generate an answer describing the decisions discussed.
+
+### Retrieval Levels
+
+| Level | Purpose |
+|---|---|
+| Document | Broad meeting-level information |
+| Segment | Speaker-specific conversation |
+| Chunk | Detailed factual retrieval |
+
+The system also supports streaming responses through WebSockets.
 
 ---
 
-## 10. Docker
+## 10. API Documentation
 
-The application supports Docker deployment for both the backend (CPU/GPU) and the new Next.js frontend.
+The FastAPI backend exposes REST and WebSocket endpoints.
+
+### REST API
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/jobs/{id}/status` | Get processing status |
+| POST | `/api/jobs/{id}/query` | Ask questions about a meeting |
+| GET | `/api/jobs/{id}/download` | Download processed output |
+| POST | `/api/jobs/{id}/reindex` | Rebuild the vector index |
+| POST | `/api/jobs/{id}/cancel` | Cancel a processing job |
+| POST | `/api/jobs/{id}/restart` | Restart a failed job |
+
+### WebSocket API
+
+| Endpoint | Description |
+|---|---|
+| `/ws/jobs/{id}` | Real-time processing progress |
+| `/ws/chat/{id}` | Streaming AI responses |
+
+For complete request parameters and response formats, refer to the backend API implementation.
+
+---
+
+## 11. Docker Deployment
+
+The project includes Docker configuration for containerized deployment.
 
 ### Build Backend
+
 ```bash
-# CPU-only (default)
-docker build -t meetbot-backend .
+docker build -t meetmind-backend .
 ```
 
 ### Build Frontend
+
 ```bash
 cd frontend
-docker build -t meetbot-frontend .
+
+docker build -t meetmind-frontend .
 ```
 
-### docker-compose (Frontend + Backend)
-
-A `docker-compose.yml` can be set up to run the local SQLite database/backend on port 8080 alongside the standalone Next.js image on port 3000 mapping internally to the backend.
+### Run Using Docker Compose
 
 ```bash
-# Start all services
 docker compose up -d
+```
 
-# Tail logs
+View logs:
+
+```bash
 docker compose logs -f
+```
 
-# Stop
+Stop services:
+
+```bash
 docker compose down
 ```
 
-### Volume mounts (Backend)
-
-| Container path | Contents |
-|---|---|
-| `/app/data` | Uploaded audio files |
-| `/app/models` | Embedding model + GGUF weights (read-only in compose) |
-| `/app/db` | Chroma vector stores + SQLite database |
-| `/app/results` | Pipeline output JSONs |
-| `/app/.cache_hf` | HuggingFace model download cache |
-| `/app/temp` | Per-job JSONL intermediates (ephemeral; auto-cleaned) |
-
 ---
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
-**`ffmpeg: command not found`**
-Install it: `sudo apt install ffmpeg` (Ubuntu) or `brew install ffmpeg` (macOS).
-In Docker, `ffmpeg` is installed by the Dockerfile; no action needed.
+### FFmpeg Not Found
 
-**Pyannote download fails / 401 Unauthorized**
-Set `HF_API_TOKEN` to a token that has explicitly accepted the Pyannote licence at
-https://huggingface.co/pyannote/speaker-diarization-3.1.
+Install FFmpeg and ensure it is available through your system PATH.
 
-**HF Inference: "Model is not supported by provider"**
-Leave `HF_PROVIDER=auto` — MeetMind-AI looks up the correct provider automatically.
-Pin it manually (e.g. `HF_PROVIDER=sambanova`) only if you have a specific reason to.
+### Hugging Face Authentication Error
 
-**GPU out-of-memory during indexing**
-MeetMind-AI automatically falls back to CPU for embedding if a GPU OOM is detected and
-logs a warning. To avoid OOM proactively:
-- Lower `EMBED_BATCH_SIZE` (e.g. `8`)
-- Set `EMBEDDING_DEVICE=cpu` to keep embedding off the GPU entirely
-- Reduce `LOCAL_LLM_GPU_LAYERS` if the GGUF model is also on GPU
+Check your `HF_API_TOKEN` and ensure you have accepted the relevant model access conditions.
 
-**Job stuck at 18 segments after restart**
-This was a known duplication bug (fixed). `create_segments_from_aligned()` now
-deletes all existing segments before inserting, and `api_job_restart` clears the
-segment table and temp JSONL on every restart. Segment counts are always stable.
+### Pyannote Model Download Failure
 
-**Pipeline cancelled mid-indexing — restart produces wrong index**
-Restart via the UI **Restart** button (not by re-uploading). The restart handler clears:
-- Stale DB segment rows
-- Temporary JSONL files under `TEMP_DIR/<job_id>/`
-The pipeline then re-runs from the beginning, loading transcription and diarization
-from cache (near-instant). The new index will be correct.
+Verify access to the Pyannote speaker diarization model on Hugging Face.
 
-**Local LLM generates garbage or empty output**
-- Verify the GGUF file exists at `LOCAL_LLM_MODEL_PATH`
-- Only GGUF-quantised models are supported (not GPTQ or AWQ)
-- Try reducing `LOCAL_LLM_MAX_TOKENS` if the model cuts off prematurely
-- Increase `LOCAL_LLM_CONTEXT_SIZE` if the prompt exceeds the window
+### CUDA Out of Memory
 
-**Database schema errors on upgrade**
-MeetMind-AI runs lightweight column-add migrations on startup. If a schema error occurs,
-back up and delete `meetbot.db`, then restart — job history is lost but all other
-configuration is preserved.
+Try reducing embedding batch size or switching model execution to CPU.
 
-**`EMBED_BATCH_SIZE` / memory pressure**
-`MEMORY_WATCH_ENABLED=true` halves the batch size automatically when RAM usage
-exceeds `MEMORY_WATCH_THRESHOLD_PCT`. If you see repeated warnings, lower
-`EMBED_BATCH_SIZE` permanently in `.env`.
+### Frontend Connection Error
 
----
+Ensure the backend is running on port 8080 and that the frontend API configuration points to the correct address.
 
-## 12. Development Notes
+### Missing Python Dependencies
 
-### Single-worker queue
-The job queue runs exactly one job at a time in a dedicated thread. This is
-intentional — GPU models (Whisper, Pyannote, embeddings) cannot share VRAM safely.
-Do not parallelise the worker without adding per-model locks.
-
-### Multi-level index — one collection, metadata filter
-All three retrieval levels (document / segment / chunk) share a single Chroma
-collection, distinguished by a `level` metadata field. Advantages over separate
-collections: one atomic swap covers all levels; a single model-load batch embeds
-everything. The `Retriever` uses `WHERE level = {level}` to filter at query time.
-
-### Idempotent segment insertion
-`create_segments_from_aligned()` always deletes existing segments before inserting
-new ones. This means restarting a cancelled job never doubles the segment count.
-The deletion is also triggered from `api_job_restart()` before re-queuing.
-
-### Atomic index swap
-Indexing writes to `{collection}.tmp/`, renames live → `.old/`, renames `.tmp/` →
-live, then deletes `.old/`. Queries run against the live path throughout. If the
-swap fails, `.old/` is restored automatically.
-
-### Streaming JSONL pipeline
-The full indexer pipeline is streaming end-to-end: `chunk_segments_iter()` yields
-documents lazily, they are written to a JSONL file, then `_stream_jsonl()` feeds
-them one at a time into the batched embedder. No large in-memory list is materialised.
-
-### Cancellation
-Workers check `cancel_registry.check_and_raise(job_id)` at every inter-stage
-boundary. If a cancel is requested while a stage is running, it will complete that
-stage before stopping. GPU memory is freed in the `finally` block regardless of
-outcome.
-
-### Retrieval level selection
-The UI sends `retrieval_level` and (for segment mode) `segment_count` over the
-WebSocket. The backend uses these values directly — there is no automatic intent
-classifier. The default is `"chunk"` when the parameter is omitted.
-
----
-
-## 13. Running Tests
-
-### Backend Tests (Pytest)
+Activate your virtual environment and reinstall dependencies:
 
 ```bash
-source ../venv/bin/activate
-python -m pytest tests/ --ignore=tests/test_characterization.py -v
+pip install -r requirements.txt
 ```
 
-`test_characterization.py` requires real model weights and a valid `HF_API_TOKEN`.
-Skip it in CI with the `--ignore` flag above.
+---
 
-### Frontend Tests (Jest & Playwright)
+## 13. Development Roadmap
 
-Navigate to the `frontend` directory:
+The following improvements are planned for future development.
+
+- [ ] Improve transcription accuracy and processing efficiency.
+- [ ] Implement automatic meeting summarization.
+- [ ] Extract important decisions from conversations.
+- [ ] Generate meeting action items and deadlines.
+- [ ] Improve speaker identification and transcript alignment.
+- [ ] Add multilingual meeting support.
+- [ ] Improve RAG retrieval quality and relevance.
+- [ ] Add retrieval evaluation and answer faithfulness metrics.
+- [ ] Implement cross-meeting semantic search.
+- [ ] Build an advanced meeting analytics dashboard.
+- [ ] Add exportable meeting reports.
+- [ ] Improve application performance and scalability.
+
+*Roadmap items are planned features, not currently completed functionality.*
+
+---
+
+## 14. Running Tests
+
+### Backend Tests
+
+```bash
+python -m pytest tests/ -v
+```
+
+### Frontend Tests
 
 ```bash
 cd frontend
 
-# Run Unit Tests (Jest)
 npm run test
+```
 
-# Run End-to-End Tests (Playwright)
+### End-to-End Tests
+
+```bash
 npm run test:e2e
 ```
 
+Test availability depends on the test configuration and installed dependencies.
+
 ---
 
-## License
+## 15. Acknowledgements and License
 
-MIT
+MeetMind AI builds upon the open-source **MeetBot** project by SIMETRAL55.
+
+Original repository:
+
+https://github.com/SIMETRAL55/MeetBot
+
+The inherited implementation and applicable copyright notices are retained in accordance with the original MIT license.
+
+MeetMind AI is being developed further with additional functionality, improvements, testing, and documentation.
+
+**License:** MIT (subject to the retained original license and applicable notices).
+
+---
+
+## Project Status
+
+**MeetMind AI — Under Active Development**
+
+Building smarter ways to understand, search, and interact with conversations.
+
+Developed by **Aditya Naruka**.
+
+GitHub: https://github.com/Adiii25
